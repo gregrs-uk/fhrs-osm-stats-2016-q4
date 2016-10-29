@@ -40,12 +40,24 @@ top.pcode.error <- new[order(new$matched_postcode_error,
 no.match.districts = nrow(subset(new, matched == 0))
 new.match.districts = nrow(subset(old, matched == 0)) - nrow(subset(new, matched == 0))
 existing.match.districts = nrow(subset(old, matched > 0))
-pie.numbers <- data.frame(districts = c(no.match.districts,
+zero.matches.pie <- data.frame(districts = c(no.match.districts,
                                         new.match.districts,
                                         existing.match.districts),
                           row.names = c("zero matches",
                                         "now has >= 1 match",
                                         "already had >= 1 match"))
+```
+
+```{r prep-match-progress, echo=F}
+# matching progress
+now.matched.pc <- (sum(new$matched) / sum(new$total_FHRS)) * 100
+already.matched.pc <- (sum(old$matched) / sum(new$total_FHRS)) * 100
+newly.matched.pc = now.matched.pc - already.matched.pc
+not.matched.pc = 100 - now.matched.pc
+progress.numbers <- data.frame(establishments = c(newly.matched.pc,
+                                                  already.matched.pc),
+                               row.names = c("Newly matched",
+                                             "Already matched"))
 ```
 
 ## Top 10 districts for completeness and growth
@@ -93,13 +105,22 @@ hist(new$OSM_matched_or_postcode_pc, breaks=seq(0,100,5),
      col = "#c0c0ff")
 ```
 
-## Districts with at least one match
+## Progress in matching FHRS establishments
+
+```{r plot-match-progress, echo=F}
+# bar plot of matching progress
+barplot(progress.numbers$establishments,
+        names.arg = row.names(progress.numbers),
+        ylab = "% of FHRS establishments matched",
+        col = c("#d0ffd0","#d0d0ff"),
+        main = "Overall % of FHRS establishments matched")
+```
 
 ```{r plot-pie, echo=F}
 # pie chart of districts with at least one match
 par(mai=c(0.75,0.75,0.75,0.75))
-lbls = paste(row.names(pie.numbers), " (", pie.numbers$districts, ")", sep="")
-pie(pie.numbers$districts,
+lbls = paste(row.names(zero.matches.pie), " (", zero.matches.pie$districts, ")", sep="")
+pie(zero.matches.pie$districts,
     labels = lbls,
     col = c("#ffd0d0","#d0ffd0","#d0d0ff"),
     main = "Districts with at least one match")
