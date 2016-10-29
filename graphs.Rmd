@@ -3,7 +3,7 @@ title: "Autumn Quarterly Project 2016"
 output: html_document
 ---
 
-The graphs below represent statistics relating to the [OpenStreetMap GB Autumn Quarterly Project 2016](https://wiki.openstreetmap.org/wiki/UK_2016_Q4_Project:_Food_Hygiene_Ratings), which involves using Food Hygiene Rating Scheme data to enrich the map. The data was gathered using the [FHRS/OSM comparison tool](http://gregrs.dev.openstreetmap.org/fhrs/) and relates to the time period between **11th October 2016** and **25th October 2016**. Please note that because of the OSM download process, there is a delay involved in new OSM data being processed by the comparison tool.
+The graphs below represent statistics relating to the [OpenStreetMap GB Autumn Quarterly Project 2016](https://wiki.openstreetmap.org/wiki/UK_2016_Q4_Project:_Food_Hygiene_Ratings), which involves using Food Hygiene Rating Scheme data to enrich the map. The data was gathered using the [FHRS/OSM comparison tool](http://gregrs.dev.openstreetmap.org/fhrs/) and relates to the time period between **18th October 2016** and **25th October 2016**. Please note that because of the OSM download process, there is a delay involved in new OSM data being processed by the comparison tool.
 
 ```{r load, include=T, echo=F}
 old <- read.csv("~/Desktop/fhrs-stats/stats-2016-10-18.csv", row.names=2)
