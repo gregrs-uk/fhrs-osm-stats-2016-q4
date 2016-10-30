@@ -71,6 +71,8 @@ progress.numbers <- matrix(c(old.match.pc, old.pcode.mismatch.pc,
                                              c("Already matched", "Newly matched")))
 ```
 
+<hr>
+
 ## Top 10 districts for completeness and growth
 
 ```{r plot-top10-matches, echo=F}
