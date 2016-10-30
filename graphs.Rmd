@@ -170,4 +170,4 @@ barplot(rev(top.pcode.error$matched_postcode_error),
 
 <hr>
 
-*Created by Gregrs using [R](https://www.r-project.org) and [RStudio](https://www.rstudio.com)*
+*Created by Gregrs using [R](https://www.r-project.org) and [RStudio](https://www.rstudio.com). Code freely available on [GitHub](https://github.com/gregrs-uk/fhrs-osm-stats).*
