@@ -3,7 +3,7 @@ title: "Autumn Quarterly Project 2016"
 output: html_document
 ---
 
-The graphs below represent statistics relating to the [OpenStreetMap GB Autumn Quarterly Project 2016](https://wiki.openstreetmap.org/wiki/UK_2016_Q4_Project:_Food_Hygiene_Ratings), which involves using Food Hygiene Rating Scheme data to enrich the map. The data was gathered using the [FHRS/OSM comparison tool](http://gregrs.dev.openstreetmap.org/fhrs/) and relates to the time period between **11th October 2016** and **25th October 2016**. Please note that because of the OSM download process, there is a delay involved in new OSM data being processed by the comparison tool.
+The graphs below represent statistics relating to the [OpenStreetMap GB Autumn Quarterly Project 2016](https://wiki.openstreetmap.org/wiki/UK_2016_Q4_Project:_Food_Hygiene_Ratings), which involves using Food Hygiene Rating Scheme data to enrich the map. The data was gathered using the [FHRS/OSM comparison tool](http://gregrs.dev.openstreetmap.org/fhrs/) and relates to the time period between **18th October 2016** and **25th October 2016**. Please note that because of the OSM download process, there is a delay involved in new OSM data being processed by the comparison tool.
 
 ```{r load, include=T, echo=F}
 old <- read.csv("~/Desktop/fhrs-stats/stats-2016-10-11-plus-haringey.csv", row.names=2)
@@ -14,6 +14,9 @@ new <- read.csv("~/Desktop/fhrs-stats/stats-2016-10-25.csv", row.names=2)
 # To hide the output of this chunk in the HTML page, set include=F above
 print("Number of districts matched between old and new CSVs?")
 print((new$district_id - old$district_id)[length(new$district_id)] == 0)
+
+# calculate percentage of matched FHRS establishments with an invalid/missing postcode
+new$FHRS_pcode_err_pc <- (new$matched_postcode_error / new$total_FHRS) * 100
 ```
 
 ```{r prep-top10s, echo=F}
@@ -23,7 +26,12 @@ diffs <- data.frame(matched = new$matched - old$matched,
                     row.names=row.names(new))
 
 # top 10s
-top.matches.pc <- new[order(new$FHRS_matched_pc, decreasing=T),,drop=F][1:10,,drop=F]
+top.matches.pc <- new[order(new$FHRS_matched_pc + new$FHRS_pcode_err_pc, decreasing=T),,
+                      drop=F][1:10,,drop=F]
+# we will use this matrix to create the stacked barplot
+top.matches.pc.mtx <- t(as.matrix(top.matches.pc[,c("FHRS_matched_pc","FHRS_pcode_err_pc")]))
+dimnames(top.matches.pc.mtx) = list(c("Valid postcode", "Mismatched postcode"),
+                                    row.names(top.matches.pc))
 top.pcode.pc <- new[order(new$OSM_matched_or_postcode_pc,
                           decreasing=T),,drop=F][1:10,,drop=F]
 top.newmatch <- diffs[order(diffs$matched, decreasing=T),,drop=F][1:10,,drop=F]
@@ -35,7 +43,7 @@ top.pcode.error <- new[order(new$matched_postcode_error,
                              decreasing=T),,drop=F][1:10,,drop=F]
 ```
 
-```{r prep-pie, echo=F}
+```{r prep-zero-matches, echo=F}
 # how many districts have zero matches (old vs new)
 no.match.districts = nrow(subset(new, matched == 0))
 new.match.districts = nrow(subset(old, matched == 0)) - nrow(subset(new, matched == 0))
@@ -50,54 +58,67 @@ zero.matches.pie <- data.frame(districts = c(no.match.districts,
 
 ```{r prep-match-progress, echo=F}
 # matching progress
-now.matched.pc <- (sum(new$matched) / sum(new$total_FHRS)) * 100
-already.matched.pc <- (sum(old$matched) / sum(new$total_FHRS)) * 100
-newly.matched.pc = now.matched.pc - already.matched.pc
-not.matched.pc = 100 - now.matched.pc
-progress.numbers <- data.frame(establishments = c(newly.matched.pc,
-                                                  already.matched.pc),
-                               row.names = c("Newly matched",
-                                             "Already matched"))
+new.match.pc <- (sum(new$matched) / sum(new$total_FHRS)) * 100
+new.pcode.mismatch.pc <- (sum(new$matched_postcode_error) / sum(new$total_FHRS)) * 100
+old.match.pc <- (sum(old$matched) / sum(new$total_FHRS)) * 100
+old.pcode.mismatch.pc <- (sum(old$matched_postcode_error) / sum(new$total_FHRS)) * 100
+progress.match.pc = new.match.pc - old.match.pc
+progress.pcode.mismatch.pc = new.pcode.mismatch.pc - old.pcode.mismatch.pc
+
+progress.numbers <- matrix(c(old.match.pc, old.pcode.mismatch.pc,
+                             progress.match.pc, progress.pcode.mismatch.pc), nrow=2, ncol=2,
+                             dimnames = list(c("Valid postcode", "Mismatched postcode"),
+                                             c("Already matched", "Newly matched")))
 ```
 
 ## Top 10 districts for completeness and growth
 
-```{r plot-top10s, echo=F}
-
-# best 10 districts barplots
-par(mai=c(1.1,2.25,0.75,0.75))
-barplot(rev(top.matches.pc$FHRS_matched_pc), names.arg = rev(row.names(top.matches.pc)),
-        horiz=T, las=1, col = c("#c0c0ff"),
-        #xlim=c(0,max(top.matches.pc$FHRS_matched_pc)),
+```{r plot-top10-matches, echo=F}
+par(mai=c(1.1,2.5,0.75,0.75))
+barplot(top.matches.pc.mtx[,10:1],
+        horiz=T, las=1, col = c("#c0c0ff","#ffc0c0"),
         main="Top 10: % of FHRS establishments matched",
-        xlab="% of FHRS establishments matched")
+        xlab="% of FHRS establishments matched",
+        legend.text=T, args.legend = list(x=90, y=3.25, bty="n", cex=0.85))
+```
+
+```{r plot-top10-postcodes, echo=F}
+par(mai=c(1.1,1.5,0.75,0.75))
 barplot(rev(top.pcode.pc$OSM_matched_or_postcode_pc),
         names.arg = rev(row.names(top.pcode.pc)),
         horiz=T, las=1, col = c("#c0c0ff"),
-        #xlim=c(0,max(top.pcode.pc$OSM_matched_or_postcode_pc)),
         main="Top 10: % of relevant nodes/ways with a postcode",
         xlab="% of relevant nodes/ways with a non-mismatched postcode")
+```
+
+```{r plot-top10-new-matches, echo=F}
+par(mai=c(1.1,2,0.75,0.75))
 barplot(rev(top.newmatch$matched), names.arg = rev(row.names(top.newmatch)),
         horiz=T, las=1, col = c("#c0ffc0"),
-        #xlim=c(0,max(top.newmatch$matched)),
         main="Top 10: number of new matches",
-        xlab="Number of newly matched FHRS establishments")
+        xlab="No. of newly matched FHRS establishments with valid postcodes")
+```
+
+```{r plot-top10-percentage-growth, echo=F}
+par(mai=c(1.1,2,0.75,0.75))
 barplot(rev(top.newmatch.pc$FHRS_matched_pc), names.arg = rev(row.names(top.newmatch.pc)),
         horiz=T, las=1, col = c("#c0ffc0"),
-        #xlim=c(0,max(top.newmatch.pc$FHRS_matched_pc)),
         main="Top 10: growth in % of matches",
-        xlab="Increase in the % of FHRS establishments matched")
+        xlab="Increase in % of matched FHRS establishments with valid postcodes")
 ```
 
 ## District completeness histograms
 
-```{r plot-histograms, echo=F}
+```{r plot-hist-matches, echo=F}
 # histogram of district completeness %s
-hist(new$FHRS_matched_pc, breaks=seq(0,100,5),
+hist(new$FHRS_matched_pc + new$FHRS_pcode_err_pc, breaks=seq(0,100,5),
      main = "% of FHRS matches vs. number of districts",
-     xlab = "% of FHRS establishments matched",
+     xlab = "% of FHRS establishments matched with or without postcode",
      ylab = "Number of districts",
      col = "#c0c0ff")
+```
+
+```{r plot-hist-postcode, echo=F}
 hist(new$OSM_matched_or_postcode_pc, breaks=seq(0,100,5),
      main = "% of relevant nodes/ways with postcode vs. number of districts",
      xlab = "% of relevant OSM nodes/ways with postcode",
@@ -109,14 +130,14 @@ hist(new$OSM_matched_or_postcode_pc, breaks=seq(0,100,5),
 
 ```{r plot-match-progress, echo=F}
 # bar plot of matching progress
-barplot(progress.numbers$establishments,
-        names.arg = row.names(progress.numbers),
+barplot(progress.numbers,
         ylab = "% of FHRS establishments matched",
-        col = c("#d0ffd0","#d0d0ff"),
-        main = "Overall % of FHRS establishments matched")
+        col = c("#d0d0ff","#ffd0d0"),
+        main = "Overall % of FHRS establishments matched",
+        legend.text=T, args.legend = list(x=2.25, y=1.7, bty="n", cex=0.9))
 ```
 
-```{r plot-pie, echo=F}
+```{r plot-zero-matches, echo=F}
 # pie chart of districts with at least one match
 par(mai=c(0.75,0.75,0.75,0.75))
 lbls = paste(row.names(zero.matches.pie), " (", zero.matches.pie$districts, ")", sep="")
@@ -128,18 +149,23 @@ pie(zero.matches.pie$districts,
 
 ## Districts with the most errors
 
-```{r plot-errors, echo=F}
-# top mismatches and postcode errors barplots
+```{r plot-mismatches, echo=F}
 par(mai=c(1.1,2.75,0.75,0.75))
 barplot(rev(top.mismatch$mismatch), names.arg = rev(row.names(top.mismatch)),
         horiz=T, las=1, col = c("#ffc0c0"),
         main="Districts with the most FHRS ID mismatches",
         xlab="OSM nodes/ways with an unrecognised fhrs:id")
+```
+
+```{r plot-postcode-errors, echo=F}
+par(mai=c(1.1,2.75,0.75,0.75))
 barplot(rev(top.pcode.error$matched_postcode_error),
         names.arg = rev(row.names(top.pcode.error)),
         horiz=T, las=1, col = c("#ffc0c0"),
         main="Districts with the most missing/mismatched postcodes",
         xlab="Matched OSM nodes/ways with missing/mismatched postcode")
 ```
+
+<hr>
 
 *Created by Gregrs using [R](https://www.r-project.org) and [RStudio](https://www.rstudio.com)*
