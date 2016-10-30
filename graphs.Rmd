@@ -58,14 +58,17 @@ zero.matches.pie <- data.frame(districts = c(no.match.districts,
 
 ```{r prep-match-progress, echo=F}
 # matching progress
-now.matched.pc <- (sum(new$matched) / sum(new$total_FHRS)) * 100
-already.matched.pc <- (sum(old$matched) / sum(new$total_FHRS)) * 100
-newly.matched.pc = now.matched.pc - already.matched.pc
-not.matched.pc = 100 - now.matched.pc
-progress.numbers <- data.frame(establishments = c(newly.matched.pc,
-                                                  already.matched.pc),
-                               row.names = c("Newly matched",
-                                             "Already matched"))
+new.match.pc <- (sum(new$matched) / sum(new$total_FHRS)) * 100
+new.pcode.mismatch.pc <- (sum(new$matched_postcode_error) / sum(new$total_FHRS)) * 100
+old.match.pc <- (sum(old$matched) / sum(new$total_FHRS)) * 100
+old.pcode.mismatch.pc <- (sum(old$matched_postcode_error) / sum(new$total_FHRS)) * 100
+progress.match.pc = new.match.pc - old.match.pc
+progress.pcode.mismatch.pc = new.pcode.mismatch.pc - old.pcode.mismatch.pc
+
+progress.numbers <- matrix(c(old.match.pc, old.pcode.mismatch.pc,
+                             progress.match.pc, progress.pcode.mismatch.pc), nrow=2, ncol=2,
+                             dimnames = list(c("Valid postcode", "Mismatched postcode"),
+                                             c("Already matched", "Newly matched")))
 ```
 
 <hr>
@@ -143,11 +146,11 @@ hist(new$OSM_matched_or_postcode_pc, breaks=seq(0,100,5),
 
 ```{r plot-match-progress, echo=F}
 # bar plot of matching progress
-barplot(progress.numbers$establishments,
-        names.arg = row.names(progress.numbers),
+barplot(progress.numbers,
         ylab = "% of FHRS establishments matched",
-        col = c("#d0ffd0","#d0d0ff"),
-        main = "Overall % of FHRS establishments matched")
+        col = c("#d0d0ff","#ffd0d0"),
+        main = "Overall % of FHRS establishments matched",
+        legend.text=T, args.legend = list(x=2.25, y=1.7, bty="n", cex=0.9))
 ```
 
 <hr>
