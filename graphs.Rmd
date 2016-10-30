@@ -14,6 +14,9 @@ new <- read.csv("~/Desktop/fhrs-stats/stats-2016-10-25.csv", row.names=2)
 # To hide the output of this chunk in the HTML page, set include=F above
 print("Number of districts matched between old and new CSVs?")
 print((new$district_id - old$district_id)[length(new$district_id)] == 0)
+
+# calculate percentage of matched FHRS establishments with an invalid/missing postcode
+new$FHRS_pcode_err_pc <- (new$matched_postcode_error / new$total_FHRS) * 100
 ```
 
 ```{r prep-top10s, echo=F}
@@ -23,7 +26,12 @@ diffs <- data.frame(matched = new$matched - old$matched,
                     row.names=row.names(new))
 
 # top 10s
-top.matches.pc <- new[order(new$FHRS_matched_pc, decreasing=T),,drop=F][1:10,,drop=F]
+top.matches.pc <- new[order(new$FHRS_matched_pc + new$FHRS_pcode_err_pc, decreasing=T),,
+                      drop=F][1:10,,drop=F]
+# we will use this matrix to create the stacked barplot
+top.matches.pc.mtx <- t(as.matrix(top.matches.pc[,c("FHRS_matched_pc","FHRS_pcode_err_pc")],
+                                  dimnames = c(row.names(top.matches.pc),
+                                               colnames(top.matches.pc))))
 top.pcode.pc <- new[order(new$OSM_matched_or_postcode_pc,
                           decreasing=T),,drop=F][1:10,,drop=F]
 top.newmatch <- diffs[order(diffs$matched, decreasing=T),,drop=F][1:10,,drop=F]
@@ -65,11 +73,11 @@ progress.numbers <- data.frame(establishments = c(newly.matched.pc,
 ```{r plot-top10s, echo=F}
 
 # best 10 districts barplots
-par(mai=c(1.1,2.25,0.75,0.75))
-barplot(rev(top.matches.pc$FHRS_matched_pc), names.arg = rev(row.names(top.matches.pc)),
-        horiz=T, las=1, col = c("#c0c0ff"),
+par(mai=c(1.1,2.75,0.75,0.75))
+barplot(top.matches.pc.mtx[,10:1], names.arg = colnames(top.matches.pc.mtx)[10:1],
+        horiz=T, las=1, col = c("#c0c0ff","#ffc0c0"),
         main="Top 10: % of FHRS establishments matched",
-        xlab="% of FHRS establishments matched")
+        xlab="% of FHRS establishments matched with/without valid postcode")
 barplot(rev(top.pcode.pc$OSM_matched_or_postcode_pc),
         names.arg = rev(row.names(top.pcode.pc)),
         horiz=T, las=1, col = c("#c0c0ff"),
