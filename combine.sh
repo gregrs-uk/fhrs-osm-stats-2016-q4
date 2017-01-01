@@ -14,5 +14,7 @@ do
 	# add date as first column
 	sed "s/^/$datestring,/" $filename | \
 		# and delete header rows
-		sed '/.*district_id,district_name.*/d'
+		sed '/.*district_id,district_name.*/d' | \
+		# and rows containing Dumfries
+		sed '/.*Dumfries.*/d'
 done
